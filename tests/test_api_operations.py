@@ -24,7 +24,9 @@ def test_create_product_success(mock_post):
         'http://127.0.0.1:5000/products', 
         json=new_product)
 
-@patch('api_operations.requests.post', side_effect=RequestException("Failed to create product"))
+@patch(
+    'api_operations.requests.post', 
+    side_effect=RequestException("Failed to create product"))
 @patch('api_operations.log_error_to_file')
 def test_create_product_failure(mock_log, mock_post):
     """
@@ -52,7 +54,9 @@ def test_get_products_success(mock_get):
     assert products == [{"id": 1, "name": "Product 1"}]
     mock_get.assert_called_once_with('http://127.0.0.1:5000/products')
 
-@patch('api_operations.requests.get', side_effect=RequestException("Failed to get products"))
+@patch(
+    'api_operations.requests.get', 
+    side_effect=RequestException("Failed to get products"))
 @patch('api_operations.log_error_to_file')
 def test_get_products_failure(mock_log, mock_get):
     """
@@ -80,7 +84,9 @@ def test_update_product_success(mock_put):
         'http://127.0.0.1:5000/products/1', 
         json=updated_product)
 
-@patch('api_operations.requests.put', side_effect=RequestException("Failed to update product"))
+@patch(
+    'api_operations.requests.put', 
+    side_effect=RequestException("Failed to update product"))
 @patch('api_operations.log_error_to_file')
 def test_update_product_failure(mock_log, mock_put):
     """
@@ -106,7 +112,9 @@ def test_delete_product_success(mock_delete):
     mock_delete.assert_called_once_with(
         'http://127.0.0.1:5000/products/1')
 
-@patch('api_operations.requests.delete', side_effect=RequestException("Failed to delete product"))
+@patch(
+    'api_operations.requests.delete', 
+    side_effect=RequestException("Failed to delete product"))
 @patch('api_operations.log_error_to_file')
 def test_delete_product_failure(mock_log, mock_delete):
     """

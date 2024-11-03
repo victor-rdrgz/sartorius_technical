@@ -16,7 +16,6 @@ URL = 'http://127.0.0.1:5000'
 
 def create_product(new_product: dict) -> None:
     '''Prompts the user for product info and creates it in the API.'''
-
     try:
         # Enviar el producto a la API para ser creado
         response = requests.post(f'{URL}/products', json=new_product)
@@ -24,9 +23,8 @@ def create_product(new_product: dict) -> None:
         print(f"Product '{new_product['name']}' added successfully.")
     except RequestException as e:
         log_error_to_file(e)
-        print(
-        '''Error creating product in the API. Check the log file for details.''')
-
+        print('Error creating product in the API.'
+              'Check the log file for details.')
 
 def get_products() -> list:
     '''Fetches all products from the API and prints them.'''
@@ -38,10 +36,9 @@ def get_products() -> list:
     except RequestException as e:
         log_error_to_file(e)
         print(
-            '''Error fetching products from the API. 
-            Check the log file for details.''')
+            'Error fetching products from the API.'
+            'Check the log file for details.')
         return False
-
 
 def update_product(product_to_update: dict) -> None:
     '''Updates an existing product in the API.'''
@@ -53,7 +50,8 @@ def update_product(product_to_update: dict) -> None:
         print(f"Product '{product_to_update['name']}' updated successfully.")
     except RequestException as e:
         log_error_to_file(e)
-        print('Error updating product in the API. Check the log file for details.')
+        print('Error updating product in the API.'
+              'Check the log file for details.')
 
 def delete_product(product_id: int) -> None:
     '''Deletes a product from the API.'''

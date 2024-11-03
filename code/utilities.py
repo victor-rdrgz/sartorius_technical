@@ -12,18 +12,17 @@ URL = 'http://127.0.0.1:5000'
 MAX_RETRIES = 5
 RETRY_DELAY = 3
 
-# Configuración del manejador de logs para rotar cada día y eliminar 
-# automáticamente archivos antiguos
+# Configuration for rotating logs daily and automatically deleting old files
 log_filename = 'error_log.log'
 log_handler = TimedRotatingFileHandler(
     log_filename,
     when='midnight',
     interval=1,
-    backupCount=30  # Mantener archivos durante 30 días
+    backupCount=30  # Keep log files for 30 days
 )
-log_handler.suffix = '%Y-%m-%d'  # Añadir fecha al nombre del archivo de log
+log_handler.suffix = '%Y-%m-%d'  # Append date to the log file name
 
-# Configuración del logger
+# Logger configuration
 logging.basicConfig(
     level=logging.ERROR,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -32,42 +31,53 @@ logging.basicConfig(
 )
 
 def log_error_to_file(error: Exception) -> None:
-    '''Writes error details to a daily log file using the logging 
-       module with GDPR compliance.'''
+    """
+    Log error details to a daily log file using the logging module.
+
+    Args:
+        error (Exception): The error to log.
+
+    This function will generate an error message with the error type and 
+    message, and log it to the file.
+    """
     error_message = (
         f'An error occurred | Error type: {type(error).__name__} | '
         f'Error message: {error}'
     )
-    # Registrar el error
+    # Log the error
     logging.error(error_message)
 
 
-# Function to get the current date-based log file name
 def get_log_filename() -> str:
-    '''Generate a log filename based on the current date.'''
+    """
+    Generate a log filename based on the current date.
+
+    Returns:
+        str: The log file name including the current date.
+    """
     current_date = datetime.now().strftime('%Y-%m-%d')
     return f'error_log_{current_date}.txt'
 
 # Custom exception
 class APIClientError(Exception):
+    """
+    Custom exception class for API client errors.
+    """
     def __init__(self, message: str):
         super().__init__(message)
         self.message = message
 
-def log_error_to_file_OLD(error: Exception) -> None:
-    '''Writes error details to a daily log file.'''
-    log_filename = get_log_filename()
-    with open(log_filename, 'a') as file:
-        file.write()
-        file.write('An error occurred:\n')
-        file.write(f'Error type: {type(error).__name__}\n')
-        file.write(f'Error message: {error}\n')
-        file.write('Full traceback:\n')
-        traceback.print_exc(file=file)
-        file.write('\n' + '='*50 + '\n\n')
 
 def print_data(products: list) -> None:
-    '''Prints the product list in a tabular format.'''
+    """
+    Print the product list in a tabular format.
+
+    Args:
+        products (list): The list of products to be printed.
+
+    Converts the list of products to a DataFrame and prints it in a structured 
+    format. If the product list is empty, it prints an informative message.
+    """
     if not products:
         print('There are no products in database')
         return
@@ -76,9 +86,18 @@ def print_data(products: list) -> None:
     df_products = df_products[['name', 'description', 'price']]
     print(df_products, end='\n\n')
     del df_products
-    
-    
-def check_api_available():
+
+
+def check_api_available() -> bool:
+    """
+    Check if the API is available.
+
+    Returns:
+        bool: True if the API is available, False otherwise.
+
+    Attempts to perform a health check on the API. If the API is up, prints a 
+    success message; otherwise, prints the error message.
+    """
     try:
         response = requests.get(f'{URL}/health')
         response.raise_for_status()
@@ -87,10 +106,19 @@ def check_api_available():
             return True
     except requests.exceptions.RequestException as e:
         print(f'API is not available. Error: {e}')
-    return False            
-            
-            
-def check_api_with_retries():
+    return False
+
+
+def check_api_with_retries() -> bool:
+    """
+    Retry API availability check multiple times.
+
+    Returns:
+        bool: True if the API becomes available, False if all retries fail.
+
+    This function will retry checking the API availability up to MAX_RETRIES 
+    times with a delay between each retry.
+    """
     for attempt in range(MAX_RETRIES):
         if check_api_available():
             return True
@@ -101,24 +129,33 @@ def check_api_with_retries():
 
 
 def get_new_product_info() -> dict:
-    
+    """
+    Get the information for creating a new product from user input.
+
+    Returns:
+        dict: Dictionary containing product details if input is valid.
+        Returns False if any input is invalid.
+
+    Prompts the user for product name, description, and price, and returns the 
+    information as a dictionary. If the input is invalid (e.g., empty fields 
+    or non-numeric price), logs the error and prints an error message.
+    """
     try:
-        # Solicitar el nombre del producto y verificar que no esté vacío
+        # Request product name and ensure it is not empty
         name = input('Enter product name: ').strip()
         if not name:
             print('Error: Product name cannot be empty. Operation canceled.')
             return False
 
-        # Solicitar la descripción del producto y verificar que no esté vacía
+        # Request product description and ensure it is not empty
         description = input('Enter product description: ').strip()
         if not description:
-            print(
-                '''Error: Product description cannot be empty. 
-                Operation canceled.''')
+            print('Error: Product description cannot be empty.'
+                  'Operation canceled.')
             return False
+
+        # Request product price and convert it to float, validating input
         try:
-            # Solicitar el precio y convertirlo en float, 
-            # verificando que sea válido
             price = float(input('Enter product price: '))
         except ValueError as e:
             log_error_to_file(e)
@@ -133,13 +170,24 @@ def get_new_product_info() -> dict:
         return new_product
 
     except ValueError as e:
-        # Controlar si el valor ingresado para el precio no es un número válido
+        # Log error if price input is not a valid number
         log_error_to_file(e)
         print('Error: Price must be a valid number. Operation canceled.')
         return False
-        
-        
+
+
 def get_updated_product_info() -> dict:
+    """
+    Get information for updating an existing product from user input.
+
+    Returns:
+        dict: Dictionary containing updated product details if input is valid.
+        Returns False if any input is invalid.
+
+    Prompts the user for the product ID, name, description, and price to update
+    an existing product. Logs errors for invalid input and 
+    prints corresponding messages.
+    """
     try:
         product_id = int(input('Enter the ID of the product to update: '))
     except ValueError as e:
@@ -148,21 +196,21 @@ def get_updated_product_info() -> dict:
         return False
 
     try:
-        # Solicitar el nombre del producto y verificar que no esté vacío
+        # Request product name and ensure it is not empty
         name = input('Enter product name: ').strip()
         if not name:
-            print('Error: Product name cannot be empty.'
-                  'Operation canceled.')
-            return
+            print('Error: Product name cannot be empty. Operation canceled.')
+            return False
 
-        # Solicitar la descripción del producto y verificar que no esté vacía
+        # Request product description and ensure it is not empty
         description = input('Enter product description: ').strip()
         if not description:
-            print(
-                'Error: Product description cannot be empty.Operation canceled.')
-            return
+            print('Error: Product description cannot be empty.'
+                  'Operation canceled.')
+            return False
+
+        # Request product price and convert it to float, validating input
         try:
-            # Solicitar el precio y convertirlo en float, verificando que sea válido
             price = float(input('Enter product price: '))
         except ValueError as e:
             log_error_to_file(e)
@@ -178,12 +226,22 @@ def get_updated_product_info() -> dict:
         return updated_product
 
     except ValueError as e:
-        # Controlar si el valor ingresado para el precio no es un número válido
+        # Log error if price input is not a valid number
         log_error_to_file(e)
         print('Error: Price must be a valid number. Operation canceled.')
         return False
 
+
 def get_product_to_delete() -> int:
+    """
+    Get the ID of the product to delete.
+
+    Returns:
+        int: The ID of the product to delete if input is valid.
+        Returns False if the input is invalid.
+
+    Prompts the user for the product ID and logs errors for invalid input.
+    """
     try:
         product_id = int(input('Enter the ID of the product to delete: '))
         return product_id
@@ -191,4 +249,3 @@ def get_product_to_delete() -> int:
         log_error_to_file(e)
         print('Error: ID must be a number. Operation canceled.')
         return False
-    
