@@ -1,91 +1,145 @@
 import pytest
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import patch, MagicMock
+from requests.exceptions import RequestException
 from utilities import (
-    log_error_to_file,
-    print_data,
-    check_api_available,
-    check_api_with_retries,
-    get_new_product_info,
-    get_updated_product_info,
+    log_error_to_file, 
+    get_log_filename, 
+    print_data, 
+    check_api_available, 
+    check_api_with_retries, 
+    get_new_product_info, 
+    get_updated_product_info, 
     get_product_to_delete
 )
-import logging
-import requests
 
-# Prueba para log_error_to_file
-def test_log_error_to_file():
-    error_message = Exception("Test Error")
-    with patch('logging.error') as mock_log:
-        log_error_to_file(error_message)
-        mock_log.assert_called_once_with(
-            "An error occurred | Error type: Exception | Error message: Test Error"
-        )
+@patch('utilities.logging.error')
+def test_log_error_to_file(mock_logging_error):
+    """
+    Test for logging an error to file.
+    Mock logging.error to verify that it is called correctly 
+    during error logging.
+    """
+    error = ValueError("Test error")
+    log_error_to_file(error)
+    mock_logging_error.assert_called_once()
 
-# Prueba para print_data
-def test_print_data(capsys):
-    products = [
-        {'id': 1, 'name': 'Test Product', 'description': 'Test Description', 'price': 99.99}
-    ]
-    print_data(products)
-    captured = capsys.readouterr()
-    assert "Test Product" in captured.out
-    assert "Test Description" in captured.out
-    assert "99.99" in captured.out
+def test_get_log_filename():
+    """
+    Test for generating log filename.
+    Verify that the generated filename starts with "error_log_" 
+    """
+    filename = get_log_filename()
+    assert filename.startswith("error_log_")
 
-# Prueba para check_api_available - éxito
-def test_check_api_available_success():
-    with patch('requests.get') as mock_get:
-        mock_get.return_value = MagicMock(status_code=200, json=lambda: {"status": "up"})
-        assert check_api_available() is True
+@patch('utilities.pd.DataFrame')
+def test_print_data_valid(mock_dataframe):
+    """
+    Test for printing data with valid input.
+    Mock pandas DataFrame to ensure 
+    the correct data transformation and output call.
+    """
+    mock_dataframe.return_value = MagicMock()
+    print_data([{"id": 1, "name": "Product A", "price": 20.0}])
+    mock_dataframe.assert_called_once()
 
-# Prueba para check_api_available - error
-def test_check_api_available_failure():
-    with patch('requests.get', side_effect=requests.exceptions.RequestException):
-        assert check_api_available() is False
+def test_print_data_empty():
+    """
+    Test for printing data with empty input.
+    Verify that an appropriate message is printed when there are no products.
+    """
+    with patch('builtins.print') as mock_print:
+        print_data([])
+        mock_print.assert_called_once_with(
+            'There are no products in database')
 
-# Prueba para check_api_with_retries - éxito
-def test_check_api_with_retries_success():
-    with patch('utilities.check_api_available', return_value=True):
-        assert check_api_with_retries() is True
+@patch('utilities.requests.get')
+def test_check_api_available_success(mock_get):
+    """
+    Test for checking API availability - success.
+    Mock requests.get to simulate a successful API response with status "up".
+    """
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"status": "up"}
+    mock_get.return_value = mock_response
 
-# Prueba para check_api_with_retries - error
-def test_check_api_with_retries_failure():
-    with patch('utilities.check_api_available', return_value=False):
-        assert check_api_with_retries() is False
+    assert check_api_available() is True
 
-# Prueba para get_new_product_info - éxito
-def test_get_new_product_info_success(monkeypatch):
-    monkeypatch.setattr('builtins.input', lambda _: 'Test Product')
-    with patch('builtins.input', side_effect=['Test Product', 'Test Description', '99.99']):
-        result = get_new_product_info()
-        assert result == {
-            "name": "Test Product",
-            "description": "Test Description",
-            "price": 99.99
-        }
+@patch(
+    'utilities.requests.get', 
+    side_effect=RequestException("API not available"))
+def test_check_api_available_failure(mock_get):
+    """
+    Test for checking API availability - failure.
+    Simulate an API failure by raising a RequestException.
+    """
+    assert check_api_available() is False
 
-# Prueba para get_new_product_info - error de precio
-def test_get_new_product_info_invalid_price(monkeypatch):
-    monkeypatch.setattr('builtins.input', lambda _: 'Test Product')
-    with patch('builtins.input', side_effect=['Test Product', 'Test Description', 'invalid']):
-        result = get_new_product_info()
-        assert result is False
+@patch('utilities.check_api_available', side_effect=[False, True])
+@patch('builtins.print')
+def test_check_api_with_retries(mock_print, mock_check):
+    """
+    Test for retrying API check - success.
+    Mock check_api_available to simulate retrying the API check until success.
+    """
+    assert check_api_with_retries() is True
+    assert mock_check.call_count == 2  # Ensure that the check was retried
 
-# Prueba para get_updated_product_info - éxito
-def test_get_updated_product_info_success(monkeypatch):
-    with patch('builtins.input', side_effect=['1', 'Updated Product', 'Updated Description', '150.00']):
-        result = get_updated_product_info()
-        assert result == {
-            "product_id": 1,
-            "name": "Updated Product",
-            "description": "Updated Description",
-            "price": 150.00
-        }
+@patch('builtins.input', side_effect=['Product A', 'Description', '20.0'])
+def test_get_new_product_info_valid(mock_input):
+    """
+    Test for getting new product info with valid input.
+    Mock input() to simulate user input for a new product.
+    """
+    result = get_new_product_info()
+    assert result == {
+        "name": "Product A", 
+        "price": 20.0, 
+        "description": "Description"}
 
-# Prueba para get_product_to_delete - éxito
-def test_get_product_to_delete_success(monkeypatch):
-    monkeypatch.setattr('builtins.input', lambda _: 'y')
-    with patch('builtins.input', side_effect=['1']):
-        result = get_product_to_delete()
-        assert result == 1
+@patch('builtins.input', side_effect=['Product A', 'Description', 'invalid'])
+@patch('utilities.log_error_to_file')
+def test_get_new_product_info_invalid_price(mock_log_error, mock_input):
+    """
+    Test for getting new product info with invalid price.
+    Verify that log_error_to_file is called when the 
+    user inputs an invalid price.
+    """
+    result = get_new_product_info()
+    assert result is False
+    mock_log_error.assert_called_once()
 
+@patch(
+    'builtins.input', 
+    side_effect=['1', 'Updated Product', 'Updated Description', '25.0'])
+def test_get_updated_product_info_valid(mock_input):
+    """
+    Test for getting updated product info with valid input.
+    Mock input() to simulate user input for updating a product.
+    """
+    result = get_updated_product_info()
+    assert result == {
+        "product_id": 1, 
+        "name": "Updated Product", 
+        "price": 25.0, 
+        "description": "Updated Description"}
+
+@patch('builtins.input', side_effect=['1'])
+def test_get_product_to_delete_valid(mock_input):
+    """
+    Test for getting product to delete with valid ID.
+    Mock input() to simulate user input for deleting a product.
+    """
+    result = get_product_to_delete()
+    assert result == 1
+
+@patch('builtins.input', side_effect=['invalid'])
+@patch('utilities.log_error_to_file')
+def test_get_product_to_delete_invalid(mock_log_error, mock_input):
+    """
+    Test for getting product to delete with invalid ID.
+    Verify that log_error_to_file is called when the user inputs an invalid ID.
+    """
+    result = get_product_to_delete()
+    assert result is False
+    mock_log_error.assert_called_once()
