@@ -29,7 +29,6 @@ def operation() -> None:
         try:
             choice = int(choice)
         except ValueError as e:
-            log_error_to_file(e)
             print('Invalid input. Please try again.')
             continue
 
@@ -56,9 +55,12 @@ def operation() -> None:
             print('Invalid input. Please try again.')
             
 
-if __name__ == '__main__':
-    # Comprobar si la API está disponible con varios intentos antes de proceder
+def main():
+    """Main function to check API availability and execute operations."""
     if check_api_with_retries():
         operation()
     else:
         print('API is not available. Exiting program.')
+
+if __name__ == '__main__':
+    main()

@@ -1,4 +1,5 @@
 import pytest
+from requests.exceptions import RequestException
 from unittest.mock import patch, MagicMock
 from api_operations import (
     create_product, 
@@ -6,7 +7,7 @@ from api_operations import (
     update_product, 
     delete_product
 )
-from requests.exceptions import RequestException
+
 
 @patch('api_operations.requests.post')
 def test_create_product_success(mock_post):
@@ -37,7 +38,11 @@ def test_create_product_failure(mock_log, mock_post):
         "name": "New Product", 
         "price": 20.0, 
         "description": "A new product"}
+    mock_post.return_value = MagicMock(status_code=201)
     create_product(new_product)
+    mock_post.assert_called_once_with(
+        'http://127.0.0.1:5000/products', 
+        json=new_product)
     mock_log.assert_called_once()
 
 @patch('api_operations.requests.get')

@@ -9,8 +9,24 @@ from utilities import (
     check_api_with_retries, 
     get_new_product_info, 
     get_updated_product_info, 
-    get_product_to_delete
+    get_product_to_delete,
+    APIClientError
 )
+
+def test_api_client_error():
+    """
+    Test for the custom exception APIClientError.
+    Verify that the exception stores the message correctly.
+    """
+    # Define the message for the exception
+    message = "This is a test error message."
+    
+    # Create an instance of APIClientError with the message
+    exception_instance = APIClientError(message)
+    
+    # Assert that the message is stored correctly in the exception instance
+    assert exception_instance.message == message
+    assert str(exception_instance) == message  # Ensure the message is returned correctly by str()
 
 @patch('utilities.logging.error')
 def test_log_error_to_file(mock_logging_error):
@@ -108,6 +124,28 @@ def test_get_new_product_info_invalid_price(mock_log_error, mock_input):
     result = get_new_product_info()
     assert result is False
     mock_log_error.assert_called_once()
+    
+@patch('builtins.input', side_effect=['',])
+@patch('utilities.log_error_to_file')
+def test_get_new_product_info_empty_name(mock_log_error, mock_input):
+    """
+    Test for getting new product info with invalid price.
+    Verify that log_error_to_file is called when the 
+    user inputs an invalid price.
+    """
+    result = get_new_product_info()
+    assert result is False
+    
+@patch('builtins.input', side_effect=['Product ZZ', ''])
+@patch('utilities.log_error_to_file')
+def test_get_new_product_info_empty_description(mock_log_error, mock_input):
+    """
+    Test for getting new product info with invalid price.
+    Verify that log_error_to_file is called when the 
+    user inputs an invalid price.
+    """
+    result = get_new_product_info()
+    assert result is False
 
 @patch(
     'builtins.input', 
@@ -123,6 +161,39 @@ def test_get_updated_product_info_valid(mock_input):
         "name": "Updated Product", 
         "price": 25.0, 
         "description": "Updated Description"}
+
+@patch('builtins.input', side_effect=['a', 0])
+@patch('utilities.log_error_to_file')
+def test_get_updated_product_info_invalid_id(mock_error, mock_input):
+    """
+    Test for getting updated product info with valid input.
+    Mock input() to simulate user input for updating a product.
+    """
+    result = get_updated_product_info()
+    mock_error.assert_called_once()
+    assert result == False
+    
+@patch('builtins.input', side_effect=['1',''])
+@patch('utilities.log_error_to_file')
+def test_get_updated_product_info_invalid_name(mock_error, mock_input):
+    """
+    Test for getting updated product info with valid input.
+    Mock input() to simulate user input for updating a product.
+    """
+    result = get_updated_product_info()
+    mock_error.assert_called_once()
+    assert result == False
+    
+@patch('builtins.input', side_effect=['1','Product A', ''])
+@patch('utilities.log_error_to_file')
+def test_get_updated_product_info_invalid_description(mock_error, mock_input):
+    """
+    Test for getting updated product info with valid input.
+    Mock input() to simulate user input for updating a product.
+    """
+    result = get_updated_product_info()
+    mock_error.assert_called_once()
+    assert result == False
 
 @patch('builtins.input', side_effect=['1'])
 def test_get_product_to_delete_valid(mock_input):
@@ -143,3 +214,35 @@ def test_get_product_to_delete_invalid(mock_log_error, mock_input):
     result = get_product_to_delete()
     assert result is False
     mock_log_error.assert_called_once()
+    
+# Test for check_api_with_retries when API becomes available
+@patch('utilities.time.sleep')  # Patch sleep to avoid delays during the test
+@patch('utilities.check_api_available', side_effect=[False, False, True])
+def test_check_api_with_retries_success(mock_check, mock_sleep):
+    """
+    Test the 'check_api_with_retries' function when the API becomes available
+    after a few retries.
+    
+    Mock 'check_api_available' to simulate the API becoming available after
+    a few retries. Ensure the function returns True.
+    """
+    result = check_api_with_retries()
+    assert result is True
+    assert mock_check.call_count == 3  # Should have been called three times
+
+# Test for check_api_with_retries when API fails to become available
+@patch('utilities.time.sleep')  # Patch sleep to avoid delays during the test
+@patch('utilities.check_api_available', side_effect=[False] * 5)
+def test_check_api_with_retries_failure(mock_check, mock_sleep):
+    """
+    Test the 'check_api_with_retries' function when the API fails to become available
+    after all retries.
+    
+    Mock 'check_api_available' to simulate the API being unavailable for all retries.
+    Ensure the function returns False.
+    """
+    result = check_api_with_retries()
+    assert result is False
+    assert mock_check.call_count == 5  # Should have been called MAX_RETRIES times
+
+

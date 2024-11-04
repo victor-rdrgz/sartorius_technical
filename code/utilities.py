@@ -140,41 +140,33 @@ def get_new_product_info() -> dict:
     information as a dictionary. If the input is invalid (e.g., empty fields 
     or non-numeric price), logs the error and prints an error message.
     """
-    try:
-        # Request product name and ensure it is not empty
-        name = input('Enter product name: ').strip()
-        if not name:
-            print('Error: Product name cannot be empty. Operation canceled.')
-            return False
-
-        # Request product description and ensure it is not empty
-        description = input('Enter product description: ').strip()
-        if not description:
-            print('Error: Product description cannot be empty.'
-                  'Operation canceled.')
-            return False
-
-        # Request product price and convert it to float, validating input
-        try:
-            price = float(input('Enter product price: '))
-        except ValueError as e:
-            log_error_to_file(e)
-            print('Error: Price must be a number. Operation canceled.')
-            return False
-
-        new_product = {
-            'name': name,
-            'price': price,
-            'description': description
-        }
-        return new_product
-
-    except ValueError as e:
-        # Log error if price input is not a valid number
-        log_error_to_file(e)
-        print('Error: Price must be a valid number. Operation canceled.')
+    # Request product name and ensure it is not empty
+    name = input('Enter product name: ').strip()
+    if not name:
+        print('Error: Product name cannot be empty. Operation canceled.')
         return False
 
+    # Request product description and ensure it is not empty
+    description = input('Enter product description: ').strip()
+    if not description:
+        print('Error: Product description cannot be empty.'
+                'Operation canceled.')
+        return False
+
+    # Request product price and convert it to float, validating input
+    try:
+        price = float(input('Enter product price: '))
+    except ValueError as e:
+        log_error_to_file(e)
+        print('Error: Price must be a number. Operation canceled.')
+        return False
+
+    new_product = {
+        'name': name,
+        'price': price,
+        'description': description
+    }
+    return new_product
 
 def get_updated_product_info() -> dict:
     """
@@ -195,42 +187,38 @@ def get_updated_product_info() -> dict:
         print('Error: ID must be a number. Operation canceled.')
         return False
 
-    try:
-        # Request product name and ensure it is not empty
-        name = input('Enter product name: ').strip()
-        if not name:
-            print('Error: Product name cannot be empty. Operation canceled.')
-            return False
-
-        # Request product description and ensure it is not empty
-        description = input('Enter product description: ').strip()
-        if not description:
-            print('Error: Product description cannot be empty.'
-                  'Operation canceled.')
-            return False
-
-        # Request product price and convert it to float, validating input
-        try:
-            price = float(input('Enter product price: '))
-        except ValueError as e:
-            log_error_to_file(e)
-            print('Error: Price must be a number. Operation canceled.')
-            return False
-
-        updated_product = {
-            'product_id': product_id,
-            'name': name,
-            'price': price,
-            'description': description
-        }
-        return updated_product
-
-    except ValueError as e:
-        # Log error if price input is not a valid number
-        log_error_to_file(e)
-        print('Error: Price must be a valid number. Operation canceled.')
+    # Request product name and ensure it is not empty
+    name = input('Enter product name: ').strip()
+    if not name:
+        print('Error: Product name cannot be empty. Operation canceled.')
+        log_error_to_file(
+            'Error: Product name cannot be empty. Operation canceled.')
         return False
 
+    # Request product description and ensure it is not empty
+    description = input('Enter product description: ').strip()
+    if not description:
+        log_error_to_file(
+            'Error: Product name cannot be empty. Operation canceled.')
+        print('Error: Product description cannot be empty.'
+                'Operation canceled.')
+        return False
+
+    # Request product price and convert it to float, validating input
+    try:
+        price = float(input('Enter product price: '))
+    except ValueError as e:
+        log_error_to_file(e)
+        print('Error: Price must be a number. Operation canceled.')
+        return False
+
+    updated_product = {
+        'product_id': product_id,
+        'name': name,
+        'price': price,
+        'description': description
+    }
+    return updated_product
 
 def get_product_to_delete() -> int:
     """
